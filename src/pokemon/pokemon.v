@@ -1,6 +1,8 @@
-`include "types.vh"
+`include "types.vh" // backtick ` basically tells the compiler not to try to compile this or make sense of it in a synthesis perspective, but to paste whatever is inside types.vh here
+// REFERENCES TO EXTERNAL FILES NEED THE BACKTICK 
+// ex: `TYPE_NORMAL and `TYPE_NONE below in the parameter skeleton declarations 
 
-module pokemon #(
+module pokemon #( //# is for parameter declarations 
     // Species definition (set at instantiation) 
     parameter SPECIES_ID = 0, // 1-9, ID for which pokemon it is
     parameter [4:0] TYPE_1 = `TYPE_NORMAL, // 5-bit ID from types.vh 
@@ -13,15 +15,15 @@ module pokemon #(
     parameter [7:0] BASE_SPD = 45,
 
     // Moveset (4 move IDs referencing move_rom)
-    // instantiate as 0s
+    // instantiate as 0s, let tthe top file handle the moveset assignment
     parameter [4:0] MOVE_0 = 5'd0,
     parameter [4:0] MOVE_1 = 5'd0,
     parameter [4:0] MOVE_2 = 5'd0,
     parameter [4:0] MOVE_3 = 5'd0,
 
     parameter SPRITE_FILE  = "sprites/default.hex"
-)
-(
+) // PARAMETER LIST ENDS HERE
+( // PORT LIST START
     input wire clk,
     input wire rst,
 
@@ -61,7 +63,8 @@ module pokemon #(
     // Sprite interface 
     input  wire [11:0] sprite_pixel_addr,
     output wire [1:0]  sprite_pixel_out
-);
+); // END PORT LIST, START MODULE BODY 
+// Module body includes stat calculation functions, 
 
     // Type pass-through 
     assign type1 = TYPE_1;

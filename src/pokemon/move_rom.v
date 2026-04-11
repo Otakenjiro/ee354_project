@@ -1,4 +1,4 @@
-`include "types.vh"
+`include "types.vh" // backtick ` basically tells the compiler not to try to compile this or make sense of it in a synthesis perspective, but to paste whatever is inside types.vh here
 
 module move_rom (
     input  wire [4:0]  move_id,
