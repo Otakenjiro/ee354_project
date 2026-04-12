@@ -1,57 +1,77 @@
 `timescale 1ns / 1ps
-//////////////////////////////////////////////////////////////////////////////////
-// Company: EE354
-// Engineer: Arda Caliskan
-// 
-// Create Date:    12:18:00 12/14/2017 
-// Design Name: 
-// Module Name:    vga_top 
-//
-// Date: 11/11/2024
-// Author: Arda Caliskan
-// Description: Port from NEXYS4 to A7
-//////////////////////////////////////////////////////////////////////////////////
+
 module pokemon_vga_top(
-	input ClkPort,
-	input BtnC,
-	input BtnU,
-	input BtnD,
-	input BtnL,
-	input BtnR,
+    input ClkPort,
+    input BtnC,
+    input BtnU,
+    input BtnD,
+    input BtnL,
+    input BtnR,
 
-	//VGA signal
-	output hSync, vSync,
-	output [3:0] vgaR, vgaG, vgaB,
-	
-	//SSG signal 
-	output An0, An1, An2, An3, An4, An5, An6, An7,
-	output Ca, Cb, Cc, Cd, Ce, Cf, Cg, Dp,
-	
-	output QuadSpiFlashCS
-	);
-	
-	wire bright;
-	wire[9:0] hc, vc;
-	wire[15:0] score;
-	wire [6:0] ssdOut;
-	wire [3:0] anode;
-	wire [11:0] rgb;
-	display_controller dc(.clk(ClkPort), .hSync(hSync), .vSync(vSync), .bright(bright), .hCount(hc), .vCount(vc));
-	pokemon_battle pb(.clk(ClkPort), .bright(bright),
-	                  .btnC(BtnC), .btnU(BtnU), .btnD(BtnD), .btnL(BtnL), .btnR(BtnR),
-	                  .hCount(hc), .vCount(vc), .rgb(rgb));
-	counter cnt(.clk(ClkPort), .displayNumber(score), .anode(anode), .ssdOut(ssdOut));
-	
-	assign Dp = 1;
-	assign {Ca, Cb, Cc, Cd, Ce, Cf, Cg} = ssdOut[6 : 0];
-    assign {An7, An6, An5, An4, An3, An2, An1, An0} = {4'b1111, anode};
+    output hSync, vSync,
+    output [3:0] vgaR, vgaG, vgaB,
 
-	
-	assign vgaR = rgb[11 : 8];
-	assign vgaG = rgb[7  : 4];
-	assign vgaB = rgb[3  : 0];
-	
-	// disable memory port
-	assign {QuadSpiFlashCS} = 1'b1;
+    output An0, An1, An2, An3, An4, An5, An6, An7,
+    output Ca, Cb, Cc, Cd, Ce, Cf, Cg, Dp,
+
+    output QuadSpiFlashCS
+);
+
+    wire bright;
+    wire [9:0] hc, vc;
+    wire [11:0] rgb;
+
+    // VGA timing
+    display_controller dc(
+        .clk(ClkPort),
+        .hSync(hSync), .vSync(vSync),
+        .bright(bright),
+        .hCount(hc), .vCount(vc)
+    );
+
+    // Sprite ROM wiring
+    wire [6:0] p1_row, p1_col;
+    wire [6:0] p2_row, p2_col;
+    wire [11:0] p1_color, p2_color;
+
+    // Player 1: Charizard (bottom-left)
+    charizard_rom p1_rom(
+        .clk(ClkPort),
+        .row(p1_row),
+        .col(p1_col),
+        .color_data(p1_color)
+    );
+
+    // Player 2: Pikachu (top-right)
+    pikachu_rom p2_rom(
+        .clk(ClkPort),
+        .row(p2_row),
+        .col(p2_col),
+        .color_data(p2_color)
+    );
+
+    // Battle scene controller
+    battle_scene bs(
+        .clk(ClkPort),
+        .bright(bright),
+        .btnR(BtnR),
+        .hCount(hc), .vCount(vc),
+        .rgb(rgb),
+        .p1_row(p1_row), .p1_col(p1_col),
+        .p2_row(p2_row), .p2_col(p2_col),
+        .p1_color(p1_color),
+        .p2_color(p2_color)
+    );
+
+    assign vgaR = rgb[11:8];
+    assign vgaG = rgb[7:4];
+    assign vgaB = rgb[3:0];
+
+    // Tie off unused SSD
+    assign Dp = 1;
+    assign {Ca, Cb, Cc, Cd, Ce, Cf, Cg} = 7'b1111111;
+    assign {An7, An6, An5, An4, An3, An2, An1, An0} = 8'b11111111;
+
+    assign QuadSpiFlashCS = 1'b1;
 
 endmodule
