@@ -29,6 +29,14 @@ module pokemon_vga_top(
         .hCount(hc), .vCount(vc)
     );
 
+    // Background (reusable across scenes)
+    wire [11:0] bg_color;
+    background_gen bg(
+        .hCount(hc),
+        .vCount(vc),
+        .bg_color(bg_color)
+    );
+
     // Sprite ROM wiring
     wire [6:0] p1_row, p1_col;
     wire [6:0] p2_row, p2_col;
@@ -55,7 +63,9 @@ module pokemon_vga_top(
         .clk(ClkPort),
         .bright(bright),
         .btnR(BtnR),
+        .btnL(BtnL),
         .hCount(hc), .vCount(vc),
+        .bg_color(bg_color),
         .rgb(rgb),
         .p1_row(p1_row), .p1_col(p1_col),
         .p2_row(p2_row), .p2_col(p2_col),
