@@ -194,3 +194,5 @@ pokemon # (
     .rst (rst),
     .level (BATTLE_LEVEL)
 );
+
+endmodule
