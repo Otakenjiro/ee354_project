@@ -45,7 +45,8 @@ module battle_engine (
     wire [9:0]  base_dmg = (denominator != 0) ? (numerator / denominator) + 10'd2 : 10'd2;
 
     wire [14:0] typed_dmg = base_dmg * type_mult;
-    wire [9:0]  after_type = typed_dmg[14:2]; // divide by 4
+    wire [12:0] after_type_wide = typed_dmg[14:2]; // divide by 4
+    wire [9:0]  after_type = (after_type_wide > 13'd1023) ? 10'd1023 : after_type_wide[9:0];
 
     wire [7:0]  rng_factor = 8'd85 + {4'd0, rng};
     wire [17:0] final_prod = after_type * rng_factor;

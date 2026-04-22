@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -E \"\\\\.\\(v|sv|mem|mif|coe\\)$\")",
+      "Bash(wc -l /c/Users/kenji/Desktop/ee354_project/sprites/*.v)",
+      "Bash(grep -r \"^\\\\s*[a-z_][a-z_0-9]*\\\\s\\\\+\" /c/Users/kenji/Desktop/ee354_project/src/*.v)",
+      "Bash(ls -lh /c/Users/kenji/Desktop/ee354_project/sprites/*.mem /c/Users/kenji/Desktop/ee354_project/sprites/*rom.v)",
+      "Bash(wc -l /c/Users/kenji/Desktop/ee354_project/src/*.v)",
+      "Bash(grep -r \"reset_sync\\\\|nidoking\\\\|gengar\\\\|pikachu\" /c/Users/kenji/Desktop/ee354_project/src/*.v)",
+      "Bash(ls -lh /c/Users/kenji/Desktop/ee354_project/sprites/*.v /c/Users/kenji/Desktop/ee354_project/sprites/*.mem)",
+      "Bash(xargs wc *)",
+      "Bash(grep -n \"battle_12_bit_rom\\\\|battle_rom\" /c/Users/kenji/Desktop/ee354_project/src/*.v)",
+      "Bash(grep -r \"FX_\\\\|status\\\\|effect\" /c/Users/kenji/Desktop/ee354_project/src/*.v)",
+      "Bash(grep -n \"4'd4\\\\|4'd5\\\\|4'd6\" /c/Users/kenji/Desktop/ee354_project/src/*.v)"
+    ]
+  }
+}

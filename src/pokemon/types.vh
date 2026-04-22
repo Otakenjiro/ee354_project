@@ -21,14 +21,4 @@
 `define TYPE_DRAGON   5'd14
 `define TYPE_NONE     5'd31   // used for mono-type pokemon's second slot. ex: charmander: fire, NONE. charizard: fire, flying
 
-// 1-bit encoding for the status effect IDs 
-`define FX_NONE        8'd0
-`define FX_LOWER_ACC   8'd1 // Smokescreen: opponent -1 accuracy stage
-`define FX_SLEEP       8'd2 // Sleep Powder, Hypnosis
-`define FX_RAISE_DEF   8'd3 // Withdraw: self +1 defense stage
-`define FX_LOWER_SPD   8'd4 // Scary Face: opponent -2 speed stage
-`define FX_PARALYZE    8'd5 // Thunder Wave
-`define FX_RAISE_SPD   8'd6 // Agility: self +2 speed stage
-`define FX_BLOCK_DROPS 8'd7 // Mist: block stat drops
-
 `endif

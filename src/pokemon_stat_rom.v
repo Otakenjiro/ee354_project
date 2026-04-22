@@ -40,21 +40,6 @@ module pokemon_stat_rom (
                 type1 = WATER; type2 = TNONE;
                 move0 = 5'd7; move1 = 5'd8; move2 = 5'd9; move3 = 5'd23;
             end
-            4'd4: begin // Nidoking
-                max_hp = 10'd141; atk = 9'd97; def_stat = 9'd82; spd = 9'd90;
-                type1 = POISON; type2 = GROUND;
-                move0 = 5'd10; move1 = 5'd11; move2 = 5'd12; move3 = 5'd24;
-            end
-            4'd5: begin // Gengar
-                max_hp = 10'd120; atk = 9'd70; def_stat = 9'd65; spd = 9'd115;
-                type1 = GHOST; type2 = POISON;
-                move0 = 5'd13; move1 = 5'd6; move2 = 5'd14; move3 = 5'd25;
-            end
-            4'd6: begin // Pikachu
-                max_hp = 10'd95;  atk = 9'd60; def_stat = 9'd45; spd = 9'd95;
-                type1 = ELECTRIC; type2 = TNONE;
-                move0 = 5'd15; move1 = 5'd16; move2 = 5'd17; move3 = 5'd26;
-            end
             4'd7: begin // Moltres
                 max_hp = 10'd150; atk = 9'd105; def_stat = 9'd95; spd = 9'd95;
                 type1 = FIRE; type2 = FLYING;

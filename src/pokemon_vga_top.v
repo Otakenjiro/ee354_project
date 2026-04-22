@@ -8,6 +8,9 @@ module pokemon_vga_top(
     input BtnL,
     input BtnR,
 
+    inout PS2_CLK,
+    inout PS2_DATA,
+
     output hSync, vSync,
     output [3:0] vgaR, vgaG, vgaB,
 
@@ -82,6 +85,119 @@ module pokemon_vga_top(
     );
 
     // ----------------------------------------------------------------
+    //  PS/2 Bidirectional Bus (open-drain tri-state)
+    // ----------------------------------------------------------------
+    wire ps2_clk_oe, ps2_data_oe, ps2_data_out_tx;
+
+    // Open-drain: drive low when OE=1 and output=0, otherwise high-Z (pullup provides idle high)
+    assign PS2_CLK  = ps2_clk_oe                       ? 1'b0 : 1'bz;
+    assign PS2_DATA = (ps2_data_oe & ~ps2_data_out_tx) ? 1'b0 : 1'bz;
+
+    // ----------------------------------------------------------------
+    //  PS/2 Receiver
+    // ----------------------------------------------------------------
+    wire [7:0] ps2_rx_data;
+    wire       ps2_rx_valid;
+
+    ps2_rx ps2(
+        .clk(ClkPort),
+        .rst(sys_rst),
+        .ps2_clk_in(PS2_CLK),
+        .ps2_data_in(PS2_DATA),
+        .data(ps2_rx_data),
+        .data_valid(ps2_rx_valid)
+    );
+
+    // ----------------------------------------------------------------
+    //  PS/2 Transmitter
+    // ----------------------------------------------------------------
+    wire [7:0] init_tx_data;
+    wire       init_tx_start;
+    wire       tx_busy, tx_done, tx_err;
+
+    ps2_tx ps2_transmitter(
+        .clk(ClkPort),
+        .rst(sys_rst),
+        .tx_data(init_tx_data),
+        .tx_start(init_tx_start),
+        .ps2_clk_in(PS2_CLK),
+        .ps2_data_in(PS2_DATA),
+        .tx_busy(tx_busy),
+        .tx_done(tx_done),
+        .tx_err(tx_err),
+        .ps2_clk_oe(ps2_clk_oe),
+        .ps2_data_out(ps2_data_out_tx),
+        .ps2_data_oe(ps2_data_oe)
+    );
+
+    // ----------------------------------------------------------------
+    //  PS/2 Mouse Init (sends Reset + Enable Data Reporting)
+    // ----------------------------------------------------------------
+    wire init_done;
+
+    ps2_mouse_init mouse_init(
+        .clk(ClkPort),
+        .rst(sys_rst),
+        .tx_data(init_tx_data),
+        .tx_start(init_tx_start),
+        .tx_busy(tx_busy),
+        .tx_done(tx_done),
+        .tx_err(tx_err),
+        .rx_data(ps2_rx_data),
+        .rx_valid(ps2_rx_valid),
+        .init_done(init_done)
+    );
+
+    // ----------------------------------------------------------------
+    //  Mouse Controller (only receives packets after init is done)
+    // ----------------------------------------------------------------
+    wire [9:0] mouse_x, mouse_y;
+    wire       mouse_left, mouse_right;
+    wire       mouse_rx_valid = ps2_rx_valid & init_done;
+
+    mouse_ctrl mctrl(
+        .clk(ClkPort),
+        .rst(sys_rst),
+        .rx_data(ps2_rx_data),
+        .rx_valid(mouse_rx_valid),
+        .mouse_x(mouse_x),
+        .mouse_y(mouse_y),
+        .mouse_left(mouse_left),
+        .mouse_right(mouse_right)
+    );
+
+    // ----------------------------------------------------------------
+    //  Mouse Click Detection (rising edge + hit-test)
+    // ----------------------------------------------------------------
+    reg mouse_left_prev;
+    always @(posedge ClkPort) mouse_left_prev <= mouse_left;
+    wire mouse_click = mouse_left & ~mouse_left_prev;
+
+    // Menu box regions (match video_mixer constants)
+    // Box layout: 4 boxes starting at Y=420, height 35
+    // Box X positions: 30, 180, 330, 480; each 140px wide
+    wire in_menu_y = (mouse_y >= 10'd420) && (mouse_y < 10'd455);
+    wire hit_box0  = in_menu_y && (mouse_x >= 10'd30)  && (mouse_x < 10'd170);
+    wire hit_box1  = in_menu_y && (mouse_x >= 10'd180) && (mouse_x < 10'd320);
+    wire hit_box2  = in_menu_y && (mouse_x >= 10'd330) && (mouse_x < 10'd470);
+    wire hit_box3  = in_menu_y && (mouse_x >= 10'd480) && (mouse_x < 10'd620);
+
+    // BACK button for S_FIGHT_SEL: at (540, 390) size 90x25
+    wire hit_back  = (mouse_x >= 10'd540) && (mouse_x < 10'd630) &&
+                     (mouse_y >= 10'd390) && (mouse_y < 10'd415);
+
+    // START/END screen: center area click
+    wire hit_start = (mouse_x >= 10'd220) && (mouse_x < 10'd420) &&
+                     (mouse_y >= 10'd240) && (mouse_y < 10'd320);
+
+    wire click_box0  = mouse_click & hit_box0;
+    wire click_box1  = mouse_click & hit_box1;
+    wire click_box2  = mouse_click & hit_box2;
+    wire click_box3  = mouse_click & hit_box3;
+    wire click_back  = mouse_click & hit_back;
+    wire click_start = mouse_click & hit_start;
+
+    // ----------------------------------------------------------------
     //  Game FSM <-> Datapath wiring
     // ----------------------------------------------------------------
     wire [3:0] player_active_id, cpu_active_id;
@@ -135,7 +251,7 @@ module pokemon_vga_top(
     // ----------------------------------------------------------------
     //  Move ROM
     // ----------------------------------------------------------------
-    wire [31:0] move_data;
+    wire [13:0] move_data;
     move_rom move_lut(
         .move_id(move_id),
         .move_data(move_data)
@@ -172,6 +288,9 @@ module pokemon_vga_top(
         .clk(ClkPort),
         .rst(sys_rst),
         .btn_c(btn_c), .btn_u(btn_u), .btn_d(btn_d), .btn_l(btn_l),
+        .click_box0(click_box0), .click_box1(click_box1),
+        .click_box2(click_box2), .click_box3(click_box3),
+        .click_back(click_back), .click_start(click_start),
         .rng(rng),
         .p_max_hp(p_max_hp),
         .p_atk(p_atk), .p_def(p_def), .p_spd(p_spd),
@@ -182,7 +301,6 @@ module pokemon_vga_top(
         .c_type1(c_type1), .c_type2(c_type2),
         .c_move0(c_move0), .c_move1(c_move1), .c_move2(c_move2), .c_move3(c_move3),
         .calc_damage(calc_damage),
-        .calc_super(calc_super), .calc_not_eff(calc_not_eff), .calc_immune(calc_immune),
         .move_data(move_data),
         .anim_done(anim_done),
         .player_active_id(player_active_id),
@@ -247,6 +365,13 @@ module pokemon_vga_top(
         .trigger_player_atk(trigger_player_atk),
         .trigger_cpu_atk(trigger_cpu_atk),
         .anim_done(anim_done),
+        .p_move0(p_move0), .p_move1(p_move1),
+        .p_move2(p_move2), .p_move3(p_move3),
+        .p_hp0(p_hp0), .p_hp1(p_hp1), .p_hp2(p_hp2),
+        .p_active_idx(p_active_idx),
+        .player_active_id(player_active_id),
+        .cpu_active_id(cpu_active_id),
+        .mouse_x(mouse_x), .mouse_y(mouse_y),
         .rgb(rgb)
     );
 

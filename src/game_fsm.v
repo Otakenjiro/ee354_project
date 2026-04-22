@@ -10,6 +10,14 @@ module game_fsm (
     input wire btn_d,   // down
     input wire btn_l,   // back
 
+    // Mouse click inputs (active-high pulses from click detection)
+    input wire click_box0,
+    input wire click_box1,
+    input wire click_box2,
+    input wire click_box3,
+    input wire click_back,
+    input wire click_start,
+
     // From LFSR
     input wire [15:0] rng,
 
@@ -27,12 +35,9 @@ module game_fsm (
 
     // From battle engine
     input wire [9:0] calc_damage,
-    input wire       calc_super,
-    input wire       calc_not_eff,
-    input wire       calc_immune,
 
     // From move ROM (looked up by move_id output)
-    input wire [31:0] move_data,
+    input wire [13:0] move_data,
 
     // Animation handshake from video mixer
     input wire anim_done,
@@ -154,9 +159,9 @@ module game_fsm (
         endcase
     end
 
-    // Unpack move_data fields: type[26:22], power[21:14], accuracy[13:7], is_status[0]
-    wire [4:0] mv_type   = move_data[26:22];
-    wire [7:0] mv_power  = move_data[0] ? 8'd0 : move_data[21:14];
+    // Unpack move_data fields: {type[13:9], power[8:1], is_status[0]}
+    wire [4:0] mv_type   = move_data[13:9];
+    wire [7:0] mv_power  = move_data[0] ? 8'd0 : move_data[8:1];
     wire       mv_status = move_data[0];
 
     // Next/prev index helpers (mod 3 without modulo operator)
@@ -228,6 +233,10 @@ module game_fsm (
             apply_delay <= 0;
             p_hp[0] <= 0; p_hp[1] <= 0; p_hp[2] <= 0;
             c_hp[0] <= 0; c_hp[1] <= 0; c_hp[2] <= 0;
+            be_atk <= 0; be_def <= 0; be_power <= 0;
+            be_move_type <= 0; be_def_type1 <= 0; be_def_type2 <= 0;
+            be_rng <= 0; be_is_status <= 1;
+            move_id <= 0;
         end else begin
             btn_c_prev <= btn_c;
             btn_u_prev <= btn_u;
@@ -244,15 +253,11 @@ module game_fsm (
                 p_active <= 0;
                 c_active <= 0;
                 user_won <= 0;
-                if (btn_c_rise) begin
-                    // Initialize HP from stat ROM (takes 1 cycle for ROM to settle)
+                if (btn_c_rise || click_start) begin
                     game_state <= S_IDLE;
-                    // We'll set HP in a dedicated init - for now use known values
-                    // Player team: Charizard(138), Venusaur(140), Blastoise(139)
                     p_hp[0] <= 10'd138;
                     p_hp[1] <= 10'd140;
                     p_hp[2] <= 10'd139;
-                    // CPU team: Moltres(150), Zapdos(150), Articuno(150)
                     c_hp[0] <= 10'd150;
                     c_hp[1] <= 10'd150;
                     c_hp[2] <= 10'd150;
@@ -272,10 +277,57 @@ module game_fsm (
                         cursor_pos <= 0;
                     end
                 end
+                // Mouse: click directly on FIGHT or SWITCH box
+                if (click_box0) begin
+                    game_state <= S_FIGHT_SEL;
+                    cursor_pos <= 0;
+                end
+                if (click_box1) begin
+                    game_state <= S_SWITCH_SEL;
+                    cursor_pos <= 0;
+                end
             end
 
             S_FIGHT_SEL: begin
                 // Navigate 4 moves
+                if (btn_d_rise)
+                    cursor_pos <= (cursor_pos == 2'd3) ? 2'd0 : cursor_pos + 2'd1;
+                if (btn_u_rise)
+                    cursor_pos <= (cursor_pos == 2'd0) ? 2'd3 : cursor_pos - 2'd1;
+                if (btn_l_rise || click_back) begin
+                    game_state <= S_IDLE;
+                    cursor_pos <= 0;
+                end
+                if (btn_c_rise) begin
+                    player_fights <= 1;
+                    player_move_sel <= cursor_pos;
+                    game_state <= S_CPU_THINK;
+                end
+                // Mouse: click directly on a move box
+                if (click_box0) begin
+                    player_fights <= 1;
+                    player_move_sel <= 2'd0;
+                    game_state <= S_CPU_THINK;
+                end
+                if (click_box1) begin
+                    player_fights <= 1;
+                    player_move_sel <= 2'd1;
+                    game_state <= S_CPU_THINK;
+                end
+                if (click_box2) begin
+                    player_fights <= 1;
+                    player_move_sel <= 2'd2;
+                    game_state <= S_CPU_THINK;
+                end
+                if (click_box3) begin
+                    player_fights <= 1;
+                    player_move_sel <= 2'd3;
+                    game_state <= S_CPU_THINK;
+                end
+            end
+
+            S_SWITCH_SEL: begin
+                // Navigate 3 Pokemon (+ BACK at pos 3)
                 if (btn_d_rise)
                     cursor_pos <= (cursor_pos == 2'd3) ? 2'd0 : cursor_pos + 2'd1;
                 if (btn_u_rise)
@@ -285,26 +337,11 @@ module game_fsm (
                     cursor_pos <= 0;
                 end
                 if (btn_c_rise) begin
-                    player_fights <= 1;
-                    player_move_sel <= cursor_pos;
-                    game_state <= S_CPU_THINK;
-                end
-            end
-
-            S_SWITCH_SEL: begin
-                // Navigate 3 Pokemon
-                if (btn_d_rise)
-                    cursor_pos <= (cursor_pos == 2'd2) ? 2'd0 : cursor_pos + 2'd1;
-                if (btn_u_rise)
-                    cursor_pos <= (cursor_pos == 2'd0) ? 2'd2 : cursor_pos - 2'd1;
-                if (btn_l_rise) begin
-                    game_state <= S_IDLE;
-                    cursor_pos <= 0;
-                end
-                if (btn_c_rise) begin
-                    // Only allow switch to a different, alive Pokemon
-                    // Mux HP by cursor_pos to avoid variable array index
-                    if (cursor_pos != p_active && (
+                    if (cursor_pos == 2'd3) begin
+                        // BACK button via keyboard
+                        game_state <= S_IDLE;
+                        cursor_pos <= 0;
+                    end else if (cursor_pos != p_active && (
                         (cursor_pos == 2'd0 && p_hp[0] > 0) ||
                         (cursor_pos == 2'd1 && p_hp[1] > 0) ||
                         (cursor_pos == 2'd2 && p_hp[2] > 0)
@@ -313,6 +350,27 @@ module game_fsm (
                         player_switch_to <= cursor_pos;
                         game_state <= S_CPU_THINK;
                     end
+                end
+                // Mouse: click directly on a Pokemon slot
+                if (click_box0 && 2'd0 != p_active && p_hp[0] > 0) begin
+                    player_fights <= 0;
+                    player_switch_to <= 2'd0;
+                    game_state <= S_CPU_THINK;
+                end
+                if (click_box1 && 2'd1 != p_active && p_hp[1] > 0) begin
+                    player_fights <= 0;
+                    player_switch_to <= 2'd1;
+                    game_state <= S_CPU_THINK;
+                end
+                if (click_box2 && 2'd2 != p_active && p_hp[2] > 0) begin
+                    player_fights <= 0;
+                    player_switch_to <= 2'd2;
+                    game_state <= S_CPU_THINK;
+                end
+                // Box 3 = BACK in switch selection
+                if (click_box3) begin
+                    game_state <= S_IDLE;
+                    cursor_pos <= 0;
                 end
             end
 
@@ -406,7 +464,7 @@ module game_fsm (
                     be_is_status <= mv_status;
                 end
 
-                if (apply_delay == 4'd5) begin
+                if (apply_delay == 4'd10) begin
                     // Apply damage to the correct HP register
                     if (current_is_player) begin
                         case (c_active)
@@ -473,7 +531,7 @@ module game_fsm (
                     be_is_status <= mv_status;
                 end
 
-                if (apply_delay == 4'd5) begin
+                if (apply_delay == 4'd10) begin
                     if (current_is_player) begin
                         case (c_active)
                             2'd0: c_hp[0] <= (calc_damage >= c_hp[0]) ? 10'd0 : c_hp[0] - calc_damage;
@@ -519,7 +577,7 @@ module game_fsm (
             end
 
             S_END: begin
-                if (btn_c_rise)
+                if (btn_c_rise || click_start)
                     game_state <= S_START;
             end
 
