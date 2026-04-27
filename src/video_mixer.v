@@ -31,12 +31,9 @@ module video_mixer (
     input wire [1:0] p_active_idx,
 
     // Pokemon IDs for name display
-    input wire [3:0] player_active_id,
-    input wire [3:0] cpu_active_id,
+    input wire [2:0] player_active_id,
+    input wire [2:0] cpu_active_id,
 
-    // Mouse cursor position
-    input wire [9:0] mouse_x,
-    input wire [9:0] mouse_y,
 
     output reg [11:0] rgb
 );
@@ -503,45 +500,45 @@ module video_mixer (
     //  Pokemon Name Lookup
     // ================================================================
     function [5:0] pokemon_name_char;
-        input [3:0] pid;
+        input [2:0] pid;
         input [3:0] idx;
         begin
             pokemon_name_char = CH_SPC;
             case (pid)
-            4'd1: case(idx) // CHARIZARD
+            3'd1: case(idx) // CHARIZARD
                 4'd0:pokemon_name_char=CH_C; 4'd1:pokemon_name_char=CH_H;
                 4'd2:pokemon_name_char=CH_A; 4'd3:pokemon_name_char=CH_R;
                 4'd4:pokemon_name_char=CH_I; 4'd5:pokemon_name_char=CH_Z;
                 4'd6:pokemon_name_char=CH_A; 4'd7:pokemon_name_char=CH_R;
                 4'd8:pokemon_name_char=CH_D; default:;
             endcase
-            4'd2: case(idx) // VENUSAUR
+            3'd2: case(idx) // VENUSAUR
                 4'd0:pokemon_name_char=CH_V; 4'd1:pokemon_name_char=CH_E;
                 4'd2:pokemon_name_char=CH_N; 4'd3:pokemon_name_char=CH_U;
                 4'd4:pokemon_name_char=CH_S; 4'd5:pokemon_name_char=CH_A;
                 4'd6:pokemon_name_char=CH_U; 4'd7:pokemon_name_char=CH_R;
                 default:;
             endcase
-            4'd3: case(idx) // BLASTOISE
+            3'd3: case(idx) // BLASTOISE
                 4'd0:pokemon_name_char=CH_B; 4'd1:pokemon_name_char=CH_L;
                 4'd2:pokemon_name_char=CH_A; 4'd3:pokemon_name_char=CH_S;
                 4'd4:pokemon_name_char=CH_T; 4'd5:pokemon_name_char=CH_O;
                 4'd6:pokemon_name_char=CH_I; 4'd7:pokemon_name_char=CH_S;
                 4'd8:pokemon_name_char=CH_E; default:;
             endcase
-            4'd7: case(idx) // MOLTRES
+            3'd4: case(idx) // MOLTRES
                 4'd0:pokemon_name_char=CH_M; 4'd1:pokemon_name_char=CH_O;
                 4'd2:pokemon_name_char=CH_L; 4'd3:pokemon_name_char=CH_T;
                 4'd4:pokemon_name_char=CH_R; 4'd5:pokemon_name_char=CH_E;
                 4'd6:pokemon_name_char=CH_S; default:;
             endcase
-            4'd8: case(idx) // ZAPDOS
+            3'd5: case(idx) // ZAPDOS
                 4'd0:pokemon_name_char=CH_Z; 4'd1:pokemon_name_char=CH_A;
                 4'd2:pokemon_name_char=CH_P; 4'd3:pokemon_name_char=CH_D;
                 4'd4:pokemon_name_char=CH_O; 4'd5:pokemon_name_char=CH_S;
                 default:;
             endcase
-            4'd9: case(idx) // ARTICUNO
+            3'd6: case(idx) // ARTICUNO
                 4'd0:pokemon_name_char=CH_A; 4'd1:pokemon_name_char=CH_R;
                 4'd2:pokemon_name_char=CH_T; 4'd3:pokemon_name_char=CH_I;
                 4'd4:pokemon_name_char=CH_C; 4'd5:pokemon_name_char=CH_U;
@@ -668,7 +665,7 @@ module video_mixer (
     localparam TEXT_STRIDE = 8'd11;
 
     // Player team Pokemon IDs (hardcoded, same as game_fsm)
-    localparam [3:0] PT0 = 4'd1, PT1 = 4'd2, PT2 = 4'd3;
+    localparam [2:0] PT0 = 3'd1, PT1 = 3'd2, PT2 = 3'd3;
 
     wire [9:0] box0_x = 10'd30;
     wire [9:0] box1_x = 10'd180;
@@ -1249,37 +1246,6 @@ module video_mixer (
     end
 
     // ================================================================
-    //  Mouse cursor (8x12 arrow, highest priority)
-    // ================================================================
-    function cursor_pixel;
-        input [3:0] cy;
-        input [2:0] cx;
-        reg [7:0] cdata;
-        begin
-            case (cy)
-                4'd0:  cdata = 8'b10000000;
-                4'd1:  cdata = 8'b11000000;
-                4'd2:  cdata = 8'b11100000;
-                4'd3:  cdata = 8'b11110000;
-                4'd4:  cdata = 8'b11111000;
-                4'd5:  cdata = 8'b11111100;
-                4'd6:  cdata = 8'b11111110;
-                4'd7:  cdata = 8'b11110000;
-                4'd8:  cdata = 8'b11011000;
-                4'd9:  cdata = 8'b10001100;
-                4'd10: cdata = 8'b00001100;
-                4'd11: cdata = 8'b00000110;
-                default: cdata = 8'b00000000;
-            endcase
-            cursor_pixel = cdata[3'd7 - cx];
-        end
-    endfunction
-
-    wire in_cursor = (px >= mouse_x) && (px < mouse_x + 10'd8) &&
-                     (py >= mouse_y) && (py < mouse_y + 10'd12);
-    wire cursor_on = in_cursor && cursor_pixel(py - mouse_y, px - mouse_x);
-
-    // ================================================================
     //  Battle-state flag
     // ================================================================
     wire in_battle = (game_state != S_START) && (game_state != S_END);
@@ -1293,9 +1259,7 @@ module video_mixer (
 
         // ---------- START screen ----------
         end else if (game_state == S_START) begin
-            if (cursor_on)
-                rgb = WHITE;
-            else if (text_on)
+            if (text_on)
                 rgb = flash_bit ? WHITE : MED_GRAY;
             else if (in_restart_box) begin
                 if (restart_border)
@@ -1307,9 +1271,7 @@ module video_mixer (
 
         // ---------- END screen ----------
         end else if (game_state == S_END) begin
-            if (cursor_on)
-                rgb = WHITE;
-            else if (text_on)
+            if (text_on)
                 rgb = WHITE;
             else if (in_restart_box) begin
                 if (restart_border)
@@ -1321,11 +1283,8 @@ module video_mixer (
 
         // ---------- Battle states ----------
         end else begin
-            if (cursor_on)
-                rgb = WHITE;
-
             // HP bars
-            else if (in_p1_hp_border) begin
+            if (in_p1_hp_border) begin
                 if (in_p1_hp_fill)       rgb = p1_hp_color;
                 else if (in_p1_hp_bg)    rgb = DARK_GRAY;
                 else                     rgb = WHITE;

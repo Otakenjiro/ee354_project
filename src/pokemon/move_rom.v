@@ -2,10 +2,11 @@
 
 module move_rom (
     input  wire [4:0]  move_id,
-    output reg  [13:0] move_data
+    output reg  [12:0] move_data
 );
-    // Encoding: {type[13:9], power[8:1], is_status[0]}
+    // Encoding: {type[12:9], power[8:1], is_status[0]}
     // Status moves have power = 0, is_status = 1
+    // fire, grass, water, normal, poison, ice, electric, flying, psychic
     always @(*) begin
         case (move_id)
 
@@ -33,7 +34,7 @@ module move_rom (
         5'd27: move_data = {`TYPE_PSYCHIC,  8'd0, 1'b1}; // Agility
         5'd28: move_data = {`TYPE_ICE,      8'd0, 1'b1}; // Mist
 
-        default: move_data = 14'd0;
+        default: move_data = 13'd0;
         endcase
     end
 endmodule

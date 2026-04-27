@@ -8,7 +8,7 @@ module display_controller(
 	output reg [9:0] vCount
 );
 
-	// 25MHz pixel-rate enable derived from 100MHz main clock.
+	// 25MHz pixel-rate enable derived from 100MHz main clock
 	// All registers use the single main clock — no derived clocks,
 	// no clock-domain crossing.
 	reg [1:0] clk_div;

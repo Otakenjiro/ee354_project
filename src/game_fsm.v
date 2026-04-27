@@ -10,41 +10,33 @@ module game_fsm (
     input wire btn_d,   // down
     input wire btn_l,   // back
 
-    // Mouse click inputs (active-high pulses from click detection)
-    input wire click_box0,
-    input wire click_box1,
-    input wire click_box2,
-    input wire click_box3,
-    input wire click_back,
-    input wire click_start,
-
     // From LFSR
     input wire [15:0] rng,
 
     // From player stat ROM (always indexed by player_active_id)
     input wire [9:0] p_max_hp,
     input wire [8:0] p_atk, p_def, p_spd,
-    input wire [4:0] p_type1, p_type2,
+    input wire [3:0] p_type1, p_type2,
     input wire [4:0] p_move0, p_move1, p_move2, p_move3,
 
     // From CPU stat ROM (always indexed by cpu_active_id)
     input wire [9:0] c_max_hp,
     input wire [8:0] c_atk, c_def, c_spd,
-    input wire [4:0] c_type1, c_type2,
+    input wire [3:0] c_type1, c_type2,
     input wire [4:0] c_move0, c_move1, c_move2, c_move3,
 
     // From battle engine
     input wire [9:0] calc_damage,
 
     // From move ROM (looked up by move_id output)
-    input wire [13:0] move_data,
+    input wire [12:0] move_data,
 
     // Animation handshake from video mixer
     input wire anim_done,
 
     // Outputs: stat ROM selectors
-    output wire [3:0] player_active_id,
-    output wire [3:0] cpu_active_id,
+    output wire [2:0] player_active_id,
+    output wire [2:0] cpu_active_id,
 
     // Output: move ROM selector
     output reg [4:0] move_id,
@@ -52,10 +44,10 @@ module game_fsm (
     // Outputs: battle engine inputs
     output reg [8:0]  be_atk,
     output reg [7:0]  be_power,
-    output reg [4:0]  be_move_type,
+    output reg [3:0]  be_move_type,
     output reg [8:0]  be_def,
-    output reg [4:0]  be_def_type1,
-    output reg [4:0]  be_def_type2,
+    output reg [3:0]  be_def_type1,
+    output reg [3:0]  be_def_type2,
     output reg [3:0]  be_rng,
     output reg        be_is_status,
 
@@ -92,9 +84,9 @@ module game_fsm (
 
     // Teams (hardcoded)
     // Player: Charizard(1), Venusaur(2), Blastoise(3)
-    // CPU: Moltres(7), Zapdos(8), Articuno(9)
-    localparam [3:0] PT0 = 4'd1, PT1 = 4'd2, PT2 = 4'd3;
-    localparam [3:0] CT0 = 4'd7, CT1 = 4'd8, CT2 = 4'd9;
+    // CPU: Moltres(4), Zapdos(5), Articuno(6)
+    localparam [2:0] PT0 = 3'd1, PT1 = 3'd2, PT2 = 3'd3;
+    localparam [2:0] CT0 = 3'd4, CT1 = 3'd5, CT2 = 3'd6;
 
     // Active Pokemon index into team arrays
     reg [1:0] p_active, c_active;
@@ -159,8 +151,8 @@ module game_fsm (
         endcase
     end
 
-    // Unpack move_data fields: {type[13:9], power[8:1], is_status[0]}
-    wire [4:0] mv_type   = move_data[13:9];
+    // Unpack move_data fields: {type[12:9], power[8:1], is_status[0]}
+    wire [3:0] mv_type   = move_data[12:9];
     wire [7:0] mv_power  = move_data[0] ? 8'd0 : move_data[8:1];
     wire       mv_status = move_data[0];
 
@@ -253,7 +245,7 @@ module game_fsm (
                 p_active <= 0;
                 c_active <= 0;
                 user_won <= 0;
-                if (btn_c_rise || click_start) begin
+                if (btn_c_rise) begin
                     game_state <= S_IDLE;
                     p_hp[0] <= 10'd138;
                     p_hp[1] <= 10'd140;
@@ -277,15 +269,6 @@ module game_fsm (
                         cursor_pos <= 0;
                     end
                 end
-                // Mouse: click directly on FIGHT or SWITCH box
-                if (click_box0) begin
-                    game_state <= S_FIGHT_SEL;
-                    cursor_pos <= 0;
-                end
-                if (click_box1) begin
-                    game_state <= S_SWITCH_SEL;
-                    cursor_pos <= 0;
-                end
             end
 
             S_FIGHT_SEL: begin
@@ -294,34 +277,13 @@ module game_fsm (
                     cursor_pos <= (cursor_pos == 2'd3) ? 2'd0 : cursor_pos + 2'd1;
                 if (btn_u_rise)
                     cursor_pos <= (cursor_pos == 2'd0) ? 2'd3 : cursor_pos - 2'd1;
-                if (btn_l_rise || click_back) begin
+                if (btn_l_rise) begin
                     game_state <= S_IDLE;
                     cursor_pos <= 0;
                 end
                 if (btn_c_rise) begin
                     player_fights <= 1;
                     player_move_sel <= cursor_pos;
-                    game_state <= S_CPU_THINK;
-                end
-                // Mouse: click directly on a move box
-                if (click_box0) begin
-                    player_fights <= 1;
-                    player_move_sel <= 2'd0;
-                    game_state <= S_CPU_THINK;
-                end
-                if (click_box1) begin
-                    player_fights <= 1;
-                    player_move_sel <= 2'd1;
-                    game_state <= S_CPU_THINK;
-                end
-                if (click_box2) begin
-                    player_fights <= 1;
-                    player_move_sel <= 2'd2;
-                    game_state <= S_CPU_THINK;
-                end
-                if (click_box3) begin
-                    player_fights <= 1;
-                    player_move_sel <= 2'd3;
                     game_state <= S_CPU_THINK;
                 end
             end
@@ -350,27 +312,6 @@ module game_fsm (
                         player_switch_to <= cursor_pos;
                         game_state <= S_CPU_THINK;
                     end
-                end
-                // Mouse: click directly on a Pokemon slot
-                if (click_box0 && 2'd0 != p_active && p_hp[0] > 0) begin
-                    player_fights <= 0;
-                    player_switch_to <= 2'd0;
-                    game_state <= S_CPU_THINK;
-                end
-                if (click_box1 && 2'd1 != p_active && p_hp[1] > 0) begin
-                    player_fights <= 0;
-                    player_switch_to <= 2'd1;
-                    game_state <= S_CPU_THINK;
-                end
-                if (click_box2 && 2'd2 != p_active && p_hp[2] > 0) begin
-                    player_fights <= 0;
-                    player_switch_to <= 2'd2;
-                    game_state <= S_CPU_THINK;
-                end
-                // Box 3 = BACK in switch selection
-                if (click_box3) begin
-                    game_state <= S_IDLE;
-                    cursor_pos <= 0;
                 end
             end
 
@@ -577,7 +518,7 @@ module game_fsm (
             end
 
             S_END: begin
-                if (btn_c_rise || click_start)
+                if (btn_c_rise)
                     game_state <= S_START;
             end
 
