@@ -1,27 +1,23 @@
 `timescale 1ns / 1ps
 
-// Top-level module wiring the FPGA pins to all internal subsystems
 module pokemon_vga_top(
-    input ClkPort,                              // 100 MHz board clock
-    input BtnC,                                 // confirm / select
-    input BtnU,                                 // cursor up
-    input BtnD,                                 // cursor down
-    input BtnL,                                 // back / cancel
-    input BtnR,                                 // reset
+    input ClkPort,
+    input BtnC,
+    input BtnU,
+    input BtnD,
+    input BtnL,
+    input BtnR,
 
-    output hSync, vSync,                        // VGA sync signals
-    output [3:0] vgaR, vgaG, vgaB,              // 12-bit VGA color out
+    output hSync, vSync,
+    output [3:0] vgaR, vgaG, vgaB,
 
-    output An0, An1, An2, An3, An4, An5, An6, An7,  // 7-seg digit selects (unused)
-    output Ca, Cb, Cc, Cd, Ce, Cf, Cg, Dp,      // 7-seg cathodes (unused)
+    output An0, An1, An2, An3, An4, An5, An6, An7,
+    output Ca, Cb, Cc, Cd, Ce, Cf, Cg, Dp,
 
-    output QuadSpiFlashCS                       // SPI flash CS, held high to disable
+    output QuadSpiFlashCS
 );
 
-    // Button synchronization + debounce
-    // 2-FF synchronizer eliminates metastability on async button inputs;
-    // debounce counter ignores mechanical bounce
-    wire btn_c, btn_u, btn_d, btn_l, btn_r;     // clean 1-cycle pulses
+    wire btn_c, btn_u, btn_d, btn_l, btn_r;
 
     btn_debounce db_c(.clk(ClkPort), .btn_in(BtnC), .btn_out(btn_c));
     btn_debounce db_u(.clk(ClkPort), .btn_in(BtnU), .btn_out(btn_u));
@@ -29,19 +25,15 @@ module pokemon_vga_top(
     btn_debounce db_l(.clk(ClkPort), .btn_in(BtnL), .btn_out(btn_l));
     btn_debounce db_r(.clk(ClkPort), .btn_in(BtnR), .btn_out(btn_r));
 
-    // Reset synchronizer
-    // Async reset assertion is fine, but de-assertion must be synchronous
-    // to the clock to avoid recovery/removal violations
-    wire sys_rst;                               // glitch-free system reset
+    wire sys_rst;
     reset_sync rst_sync(
         .clk(ClkPort),
         .async_rst_in(btn_r),
         .sync_rst_out(sys_rst)
     );
 
-    // VGA timing (single-clock with 25 MHz pixel enable)
-    wire bright;                                // high inside active 640x480
-    wire [9:0] hc, vc;                          // raw horiz/vert counters
+    wire bright;
+    wire [9:0] hc, vc;
     display_controller dc(
         .clk(ClkPort),
         .hSync(hSync), .vSync(vSync),
@@ -49,12 +41,10 @@ module pokemon_vga_top(
         .hCount(hc), .vCount(vc)
     );
 
-    // Pixel coordinates inside the active 640x480 region
-    wire [9:0] px = hc - 10'd144;               // 0..639
-    wire [8:0] py = vc - 10'd35;                // 0..479
+    wire [9:0] px = hc - 10'd144;
+    wire [8:0] py = vc - 10'd35;
 
-    // Background ROM (battle scene image)
-    wire [11:0] bg_color;                       // 12-bit color sampled at (py, px)
+    wire [11:0] bg_color;
     battle_rom bg_rom(
         .clk(ClkPort),
         .row(py),
@@ -62,37 +52,33 @@ module pokemon_vga_top(
         .color_data(bg_color)
     );
 
-    // LFSR pseudo-random number generator (used for damage variance and CPU AI)
-    wire [15:0] rng;                            // free-running random bits
+    wire [15:0] rng;
     lfsr rng_gen(
         .clk(ClkPort),
         .rst(sys_rst),
         .rnd(rng)
     );
 
-    // Game FSM <-> Datapath wiring
-    wire [2:0] player_active_id, cpu_active_id; // currently selected pokemon (1-6)
-    wire [3:0] game_state;                      // current FSM state
-    wire [1:0] cursor_pos;                      // menu cursor (0-3)
-    wire [9:0] player_hp_cur, player_hp_max;    // active player HP for display
-    wire [9:0] cpu_hp_cur, cpu_hp_max;          // active CPU HP for display
-    wire       trigger_player_atk, trigger_cpu_atk;  // 1-cycle pulses to start attack anim
-    wire       user_won;                        // result flag at end of battle
-    wire       anim_done;                       // handshake from video mixer when anim finishes
-    wire [4:0] move_id;                         // index into move ROM
+    wire [2:0] player_active_id, cpu_active_id;
+    wire [3:0] game_state;
+    wire [1:0] cursor_pos;
+    wire [9:0] player_hp_cur, player_hp_max;
+    wire [9:0] cpu_hp_cur, cpu_hp_max;
+    wire       trigger_player_atk, trigger_cpu_atk;
+    wire       user_won;
+    wire       anim_done;
+    wire [4:0] move_id;
 
-    // Battle engine I/O
-    wire [8:0] be_atk, be_def;                  // attacker ATK and defender DEF stats
-    wire [7:0] be_power;                        // move base power
-    wire [3:0] be_move_type, be_def_type1, be_def_type2;  // 4-bit type encodings
-    wire [3:0] be_rng;                          // 4-bit damage variance
-    wire       be_is_status;                    // status moves deal no damage
+    wire [8:0] be_atk, be_def;
+    wire [7:0] be_power;
+    wire [3:0] be_move_type, be_def_type1, be_def_type2;
+    wire [3:0] be_rng;
+    wire       be_is_status;
 
-    // Player stat ROM (looks up active pokemon's stats and moveset)
-    wire [9:0] p_max_hp;                        // base HP at level 50
-    wire [8:0] p_atk, p_def, p_spd;             // attack / defense / speed
-    wire [3:0] p_type1, p_type2;                // dual typing
-    wire [4:0] p_move0, p_move1, p_move2, p_move3;  // 4-move moveset
+    wire [9:0] p_max_hp;
+    wire [8:0] p_atk, p_def, p_spd;
+    wire [3:0] p_type1, p_type2;
+    wire [4:0] p_move0, p_move1, p_move2, p_move3;
 
     pokemon_stat_rom p_stats(
         .pokemon_id(player_active_id),
@@ -102,7 +88,6 @@ module pokemon_vga_top(
         .move0(p_move0), .move1(p_move1), .move2(p_move2), .move3(p_move3)
     );
 
-    // CPU stat ROM (same module, indexed by the CPU's active pokemon)
     wire [9:0] c_max_hp;
     wire [8:0] c_atk, c_def, c_spd;
     wire [3:0] c_type1, c_type2;
@@ -116,16 +101,14 @@ module pokemon_vga_top(
         .move0(c_move0), .move1(c_move1), .move2(c_move2), .move3(c_move3)
     );
 
-    // Move ROM (returns {type, power, is_status} for a given move_id)
-    wire [12:0] move_data;                      // packed move record
+    wire [12:0] move_data;
     move_rom move_lut(
         .move_id(move_id),
         .move_data(move_data)
     );
 
-    // Battle engine (combinational damage calculator)
-    wire [9:0] calc_damage;                     // computed damage value
-    wire       calc_super, calc_not_eff, calc_immune;  // type effectiveness flags
+    wire [9:0] calc_damage;
+    wire       calc_super, calc_not_eff, calc_immune;
 
     battle_engine calc(
         .atk(be_atk),
@@ -142,9 +125,8 @@ module pokemon_vga_top(
         .immune(calc_immune)
     );
 
-    // Game FSM (the brain: drives state transitions, HP storage, switching)
-    wire [9:0] p_hp0, p_hp1, p_hp2, c_hp0, c_hp1, c_hp2;  // per-slot HP for team display
-    wire [1:0] p_active_idx, c_active_idx;      // which team slot (0-2) is active
+    wire [9:0] p_hp0, p_hp1, p_hp2, c_hp0, c_hp1, c_hp2;
+    wire [1:0] p_active_idx, c_active_idx;
 
     game_fsm fsm(
         .clk(ClkPort),
@@ -180,11 +162,10 @@ module pokemon_vga_top(
         .p_active_idx(p_active_idx), .c_active_idx(c_active_idx)
     );
 
-    // Sprite mux (selects the correct pokemon sprite ROM for each side)
-    wire [6:0] p_sprite_row, p_sprite_col;      // sample coords driven from video_mixer
+    wire [6:0] p_sprite_row, p_sprite_col;
     wire [6:0] c_sprite_row, c_sprite_col;
-    wire [11:0] p_sprite_color, c_sprite_color; // sprite pixel colors
-    wire p_sprite_transparent, c_sprite_transparent;  // background-key transparency
+    wire [11:0] p_sprite_color, c_sprite_color;
+    wire p_sprite_transparent, c_sprite_transparent;
 
     sprite_mux sprites(
         .clk(ClkPort),
@@ -198,8 +179,7 @@ module pokemon_vga_top(
         .cpu_transparent(c_sprite_transparent)
     );
 
-    // Video mixer (per-pixel rendering pipeline; merges background, sprites, UI)
-    wire [11:0] rgb;                            // final pixel color to VGA
+    wire [11:0] rgb;
 
     video_mixer display(
         .clk(ClkPort),
@@ -229,17 +209,14 @@ module pokemon_vga_top(
         .rgb(rgb)
     );
 
-    // VGA output (split 12-bit rgb across the three 4-bit DAC channels)
     assign vgaR = rgb[11:8];
     assign vgaG = rgb[7:4];
     assign vgaB = rgb[3:0];
 
-    // 7-segment display tied off (unused on this design)
-    assign Dp = 1;                              // decimal point off (active-low)
-    assign {Ca, Cb, Cc, Cd, Ce, Cf, Cg} = 7'b1111111;     // all segments off
-    assign {An7, An6, An5, An4, An3, An2, An1, An0} = 8'b11111111;  // all digits disabled
+    assign Dp = 1;
+    assign {Ca, Cb, Cc, Cd, Ce, Cf, Cg} = 7'b1111111;
+    assign {An7, An6, An5, An4, An3, An2, An1, An0} = 8'b11111111;
 
-    // SPI flash chip-select held high so it does not respond on shared pins
     assign QuadSpiFlashCS = 1'b1;
 
 endmodule

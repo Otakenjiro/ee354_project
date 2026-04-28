@@ -23,24 +23,17 @@ module video_mixer (
     input wire trigger_cpu_atk,
     output reg anim_done,
 
-    // Move IDs for fight selection text
     input wire [4:0] p_move0, p_move1, p_move2, p_move3,
 
-    // Team HP for switch selection display
     input wire [9:0] p_hp0, p_hp1, p_hp2,
     input wire [1:0] p_active_idx,
 
-    // Pokemon IDs for name display
     input wire [2:0] player_active_id,
     input wire [2:0] cpu_active_id,
-
 
     output reg [11:0] rgb
 );
 
-    // ================================================================
-    //  Constants
-    // ================================================================
     localparam S_START      = 4'd0;
     localparam S_IDLE       = 4'd1;
     localparam S_FIGHT_SEL  = 4'd2;
@@ -89,9 +82,6 @@ module video_mixer (
     wire [9:0] px = hCount - H_OFFSET;
     wire [9:0] py = vCount - V_OFFSET;
 
-    // ================================================================
-    //  6-bit Font System  (A-Z = 0-25, 0-9 = 26-35, spc=36, /=37, !=38)
-    // ================================================================
     localparam CH_A=6'd0,  CH_B=6'd1,  CH_C=6'd2,  CH_D=6'd3,  CH_E=6'd4;
     localparam CH_F=6'd5,  CH_G=6'd6,  CH_H=6'd7,  CH_I=6'd8,  CH_J=6'd9;
     localparam CH_K=6'd10, CH_L=6'd11, CH_M=6'd12, CH_N=6'd13, CH_O=6'd14;
@@ -353,140 +343,137 @@ module video_mixer (
         end
     endfunction
 
-    // ================================================================
-    //  Move Name Lookup: move_name_char(move_id, char_idx) -> 6-bit ch
-    // ================================================================
     function [5:0] move_name_char;
         input [4:0] mid;
         input [3:0] idx;
         begin
             move_name_char = CH_SPC;
             case (mid)
-            5'd1: case(idx) // FLAMETHROWER
+            5'd1: case(idx)
                 4'd0:move_name_char=CH_F; 4'd1:move_name_char=CH_L; 4'd2:move_name_char=CH_A;
                 4'd3:move_name_char=CH_M; 4'd4:move_name_char=CH_E; 4'd5:move_name_char=CH_T;
                 4'd6:move_name_char=CH_H; 4'd7:move_name_char=CH_R; 4'd8:move_name_char=CH_O;
                 4'd9:move_name_char=CH_W; 4'd10:move_name_char=CH_E; 4'd11:move_name_char=CH_R;
                 default:;
             endcase
-            5'd2: case(idx) // FIRE BLAST
+            5'd2: case(idx)
                 4'd0:move_name_char=CH_F; 4'd1:move_name_char=CH_I; 4'd2:move_name_char=CH_R;
                 4'd3:move_name_char=CH_E; 4'd4:move_name_char=CH_SPC; 4'd5:move_name_char=CH_B;
                 4'd6:move_name_char=CH_L; 4'd7:move_name_char=CH_A; 4'd8:move_name_char=CH_S;
                 4'd9:move_name_char=CH_T;
                 default:;
             endcase
-            5'd3: case(idx) // SLASH
+            5'd3: case(idx)
                 4'd0:move_name_char=CH_S; 4'd1:move_name_char=CH_L; 4'd2:move_name_char=CH_A;
                 4'd3:move_name_char=CH_S; 4'd4:move_name_char=CH_H;
                 default:;
             endcase
-            5'd4: case(idx) // RAZOR LEAF
+            5'd4: case(idx)
                 4'd0:move_name_char=CH_R; 4'd1:move_name_char=CH_A; 4'd2:move_name_char=CH_Z;
                 4'd3:move_name_char=CH_O; 4'd4:move_name_char=CH_R; 4'd5:move_name_char=CH_SPC;
                 4'd6:move_name_char=CH_L; 4'd7:move_name_char=CH_E; 4'd8:move_name_char=CH_A;
                 4'd9:move_name_char=CH_F;
                 default:;
             endcase
-            5'd5: case(idx) // SOLAR BEAM
+            5'd5: case(idx)
                 4'd0:move_name_char=CH_S; 4'd1:move_name_char=CH_O; 4'd2:move_name_char=CH_L;
                 4'd3:move_name_char=CH_A; 4'd4:move_name_char=CH_R; 4'd5:move_name_char=CH_SPC;
                 4'd6:move_name_char=CH_B; 4'd7:move_name_char=CH_E; 4'd8:move_name_char=CH_A;
                 4'd9:move_name_char=CH_M;
                 default:;
             endcase
-            5'd6: case(idx) // SLUDGE BOMB
+            5'd6: case(idx)
                 4'd0:move_name_char=CH_S; 4'd1:move_name_char=CH_L; 4'd2:move_name_char=CH_U;
                 4'd3:move_name_char=CH_D; 4'd4:move_name_char=CH_G; 4'd5:move_name_char=CH_E;
                 4'd6:move_name_char=CH_SPC; 4'd7:move_name_char=CH_B; 4'd8:move_name_char=CH_O;
                 4'd9:move_name_char=CH_M; 4'd10:move_name_char=CH_B;
                 default:;
             endcase
-            5'd7: case(idx) // SURF
+            5'd7: case(idx)
                 4'd0:move_name_char=CH_S; 4'd1:move_name_char=CH_U; 4'd2:move_name_char=CH_R;
                 4'd3:move_name_char=CH_F;
                 default:;
             endcase
-            5'd8: case(idx) // HYDRO PUMP
+            5'd8: case(idx)
                 4'd0:move_name_char=CH_H; 4'd1:move_name_char=CH_Y; 4'd2:move_name_char=CH_D;
                 4'd3:move_name_char=CH_R; 4'd4:move_name_char=CH_O; 4'd5:move_name_char=CH_SPC;
                 4'd6:move_name_char=CH_P; 4'd7:move_name_char=CH_U; 4'd8:move_name_char=CH_M;
                 4'd9:move_name_char=CH_P;
                 default:;
             endcase
-            5'd9: case(idx) // ICE BEAM
+            5'd9: case(idx)
                 4'd0:move_name_char=CH_I; 4'd1:move_name_char=CH_C; 4'd2:move_name_char=CH_E;
                 4'd3:move_name_char=CH_SPC; 4'd4:move_name_char=CH_B; 4'd5:move_name_char=CH_E;
                 4'd6:move_name_char=CH_A; 4'd7:move_name_char=CH_M;
                 default:;
             endcase
-            5'd15: case(idx) // THUNDERBOLT
+            5'd15: case(idx)
                 4'd0:move_name_char=CH_T; 4'd1:move_name_char=CH_H; 4'd2:move_name_char=CH_U;
                 4'd3:move_name_char=CH_N; 4'd4:move_name_char=CH_D; 4'd5:move_name_char=CH_E;
                 4'd6:move_name_char=CH_R; 4'd7:move_name_char=CH_B; 4'd8:move_name_char=CH_O;
                 4'd9:move_name_char=CH_L; 4'd10:move_name_char=CH_T;
                 default:;
             endcase
-            5'd16: case(idx) // THUNDER
+            5'd16: case(idx)
                 4'd0:move_name_char=CH_T; 4'd1:move_name_char=CH_H; 4'd2:move_name_char=CH_U;
                 4'd3:move_name_char=CH_N; 4'd4:move_name_char=CH_D; 4'd5:move_name_char=CH_E;
                 4'd6:move_name_char=CH_R;
                 default:;
             endcase
-            5'd18: case(idx) // WING ATTACK
+            5'd18: case(idx)
                 4'd0:move_name_char=CH_W; 4'd1:move_name_char=CH_I; 4'd2:move_name_char=CH_N;
                 4'd3:move_name_char=CH_G; 4'd4:move_name_char=CH_SPC; 4'd5:move_name_char=CH_A;
                 4'd6:move_name_char=CH_T; 4'd7:move_name_char=CH_T; 4'd8:move_name_char=CH_A;
                 4'd9:move_name_char=CH_C; 4'd10:move_name_char=CH_K;
                 default:;
             endcase
-            5'd19: case(idx) // DRILL PECK
+            5'd19: case(idx)
                 4'd0:move_name_char=CH_D; 4'd1:move_name_char=CH_R; 4'd2:move_name_char=CH_I;
                 4'd3:move_name_char=CH_L; 4'd4:move_name_char=CH_L; 4'd5:move_name_char=CH_SPC;
                 4'd6:move_name_char=CH_P; 4'd7:move_name_char=CH_E; 4'd8:move_name_char=CH_C;
                 4'd9:move_name_char=CH_K;
                 default:;
             endcase
-            5'd20: case(idx) // BLIZZARD
+            5'd20: case(idx)
                 4'd0:move_name_char=CH_B; 4'd1:move_name_char=CH_L; 4'd2:move_name_char=CH_I;
                 4'd3:move_name_char=CH_Z; 4'd4:move_name_char=CH_Z; 4'd5:move_name_char=CH_A;
                 4'd6:move_name_char=CH_R; 4'd7:move_name_char=CH_D;
                 default:;
             endcase
-            5'd21: case(idx) // SMOKESCREEN
+            5'd21: case(idx)
                 4'd0:move_name_char=CH_S; 4'd1:move_name_char=CH_M; 4'd2:move_name_char=CH_O;
                 4'd3:move_name_char=CH_K; 4'd4:move_name_char=CH_E; 4'd5:move_name_char=CH_S;
                 4'd6:move_name_char=CH_C; 4'd7:move_name_char=CH_R; 4'd8:move_name_char=CH_E;
                 4'd9:move_name_char=CH_E; 4'd10:move_name_char=CH_N;
                 default:;
             endcase
-            5'd22: case(idx) // SLEEP POWDR
+            5'd22: case(idx)
                 4'd0:move_name_char=CH_S; 4'd1:move_name_char=CH_L; 4'd2:move_name_char=CH_E;
                 4'd3:move_name_char=CH_E; 4'd4:move_name_char=CH_P; 4'd5:move_name_char=CH_SPC;
                 4'd6:move_name_char=CH_P; 4'd7:move_name_char=CH_O; 4'd8:move_name_char=CH_W;
                 4'd9:move_name_char=CH_D; 4'd10:move_name_char=CH_R;
                 default:;
             endcase
-            5'd23: case(idx) // WITHDRAW
+            5'd23: case(idx)
                 4'd0:move_name_char=CH_W; 4'd1:move_name_char=CH_I; 4'd2:move_name_char=CH_T;
                 4'd3:move_name_char=CH_H; 4'd4:move_name_char=CH_D; 4'd5:move_name_char=CH_R;
                 4'd6:move_name_char=CH_A; 4'd7:move_name_char=CH_W;
                 default:;
             endcase
-            5'd26: case(idx) // THNDR WAVE
+            5'd26: case(idx)
                 4'd0:move_name_char=CH_T; 4'd1:move_name_char=CH_H; 4'd2:move_name_char=CH_N;
                 4'd3:move_name_char=CH_D; 4'd4:move_name_char=CH_R; 4'd5:move_name_char=CH_SPC;
                 4'd6:move_name_char=CH_W; 4'd7:move_name_char=CH_A; 4'd8:move_name_char=CH_V;
                 4'd9:move_name_char=CH_E;
                 default:;
             endcase
-            5'd27: case(idx) // AGILITY
+            5'd27: case(idx)
                 4'd0:move_name_char=CH_A; 4'd1:move_name_char=CH_G; 4'd2:move_name_char=CH_I;
                 4'd3:move_name_char=CH_L; 4'd4:move_name_char=CH_I; 4'd5:move_name_char=CH_T;
                 4'd6:move_name_char=CH_Y;
                 default:;
             endcase
-            5'd28: case(idx) // MIST
+            5'd28: case(idx)
                 4'd0:move_name_char=CH_M; 4'd1:move_name_char=CH_I; 4'd2:move_name_char=CH_S;
                 4'd3:move_name_char=CH_T;
                 default:;
@@ -496,49 +483,46 @@ module video_mixer (
         end
     endfunction
 
-    // ================================================================
-    //  Pokemon Name Lookup
-    // ================================================================
     function [5:0] pokemon_name_char;
         input [2:0] pid;
         input [3:0] idx;
         begin
             pokemon_name_char = CH_SPC;
             case (pid)
-            3'd1: case(idx) // CHARIZARD
+            3'd1: case(idx)
                 4'd0:pokemon_name_char=CH_C; 4'd1:pokemon_name_char=CH_H;
                 4'd2:pokemon_name_char=CH_A; 4'd3:pokemon_name_char=CH_R;
                 4'd4:pokemon_name_char=CH_I; 4'd5:pokemon_name_char=CH_Z;
                 4'd6:pokemon_name_char=CH_A; 4'd7:pokemon_name_char=CH_R;
                 4'd8:pokemon_name_char=CH_D; default:;
             endcase
-            3'd2: case(idx) // VENUSAUR
+            3'd2: case(idx)
                 4'd0:pokemon_name_char=CH_V; 4'd1:pokemon_name_char=CH_E;
                 4'd2:pokemon_name_char=CH_N; 4'd3:pokemon_name_char=CH_U;
                 4'd4:pokemon_name_char=CH_S; 4'd5:pokemon_name_char=CH_A;
                 4'd6:pokemon_name_char=CH_U; 4'd7:pokemon_name_char=CH_R;
                 default:;
             endcase
-            3'd3: case(idx) // BLASTOISE
+            3'd3: case(idx)
                 4'd0:pokemon_name_char=CH_B; 4'd1:pokemon_name_char=CH_L;
                 4'd2:pokemon_name_char=CH_A; 4'd3:pokemon_name_char=CH_S;
                 4'd4:pokemon_name_char=CH_T; 4'd5:pokemon_name_char=CH_O;
                 4'd6:pokemon_name_char=CH_I; 4'd7:pokemon_name_char=CH_S;
                 4'd8:pokemon_name_char=CH_E; default:;
             endcase
-            3'd4: case(idx) // MOLTRES
+            3'd4: case(idx)
                 4'd0:pokemon_name_char=CH_M; 4'd1:pokemon_name_char=CH_O;
                 4'd2:pokemon_name_char=CH_L; 4'd3:pokemon_name_char=CH_T;
                 4'd4:pokemon_name_char=CH_R; 4'd5:pokemon_name_char=CH_E;
                 4'd6:pokemon_name_char=CH_S; default:;
             endcase
-            3'd5: case(idx) // ZAPDOS
+            3'd5: case(idx)
                 4'd0:pokemon_name_char=CH_Z; 4'd1:pokemon_name_char=CH_A;
                 4'd2:pokemon_name_char=CH_P; 4'd3:pokemon_name_char=CH_D;
                 4'd4:pokemon_name_char=CH_O; 4'd5:pokemon_name_char=CH_S;
                 default:;
             endcase
-            3'd6: case(idx) // ARTICUNO
+            3'd6: case(idx)
                 4'd0:pokemon_name_char=CH_A; 4'd1:pokemon_name_char=CH_R;
                 4'd2:pokemon_name_char=CH_T; 4'd3:pokemon_name_char=CH_I;
                 4'd4:pokemon_name_char=CH_C; 4'd5:pokemon_name_char=CH_U;
@@ -550,9 +534,6 @@ module video_mixer (
         end
     endfunction
 
-    // ================================================================
-    //  BCD Conversion (registered, not in pixel path)
-    // ================================================================
     reg [3:0] p1_hp_h, p1_hp_t, p1_hp_o;
     reg [3:0] p1_mx_h, p1_mx_t, p1_mx_o;
     reg [3:0] p2_hp_h, p2_hp_t, p2_hp_o;
@@ -573,15 +554,11 @@ module video_mixer (
         p2_mx_o <= cpu_hp_max % 10;
     end
 
-    // Convert 4-bit digit to font char ID
     function [5:0] digit_char;
         input [3:0] d;
         digit_char = CH_0 + {2'd0, d};
     endfunction
 
-    // ================================================================
-    //  Text: START / WIN / LOSE (4x scale, centered on screen)
-    // ================================================================
     localparam FPW = 10'd20;
     localparam FPH = 10'd28;
 
@@ -655,16 +632,11 @@ module video_mixer (
                            py < RESTART_BOX_Y + 10'd3 ||
                            py >= RESTART_BOX_Y + RESTART_BOX_H - 10'd3);
 
-    // ================================================================
-    //  Text: Menu Boxes (2x scale)
-    //  Stride=11px (10px char + 1px gap), max 12 chars per box
-    // ================================================================
-    localparam TEXT_MX     = 10'd4;   // x margin inside box
-    localparam TEXT_MY     = 10'd10;  // y margin (centers 14px in 35px)
-    localparam TEXT_2X_H   = 10'd14;  // 2x scaled text height
+    localparam TEXT_MX     = 10'd4;
+    localparam TEXT_MY     = 10'd10;
+    localparam TEXT_2X_H   = 10'd14;
     localparam TEXT_STRIDE = 8'd11;
 
-    // Player team Pokemon IDs (hardcoded, same as game_fsm)
     localparam [2:0] PT0 = 3'd1, PT1 = 3'd2, PT2 = 3'd3;
 
     wire [9:0] box0_x = 10'd30;
@@ -673,7 +645,6 @@ module video_mixer (
     wire [9:0] box3_x = 10'd480;
     localparam BOX_W = 10'd140;
 
-    // Determine which box contains the pixel and compute text position
     reg        in_box_text;
     reg [1:0]  which_box;
     reg [7:0]  box_text_dx;
@@ -696,7 +667,6 @@ module video_mixer (
         end
     end
 
-    // Character index from text_dx (stride=11, comparison chain)
     reg [3:0] mt_cidx;
     reg [3:0] mt_cpix;
     always @(*) begin
@@ -714,22 +684,21 @@ module video_mixer (
         else                         begin mt_cidx=0;  mt_cpix=box_text_dx;      end
     end
 
-    wire [2:0] mt_fcol = mt_cpix[3:1]; // /2 for 2x scale
+    wire [2:0] mt_fcol = mt_cpix[3:1];
     wire [2:0] mt_frow = (py - MENU_Y - TEXT_MY) >> 1;
-    wire mt_in_font = (mt_cpix < 4'd10); // not in 1px gap
+    wire mt_in_font = (mt_cpix < 4'd10);
 
-    // Select character based on game_state and box
     reg [5:0] mt_char;
     always @(*) begin
         mt_char = CH_SPC;
         case (game_state)
         S_IDLE: begin
             case (which_box)
-            2'd0: case(mt_cidx) // FIGHT
+            2'd0: case(mt_cidx)
                 4'd0:mt_char=CH_F; 4'd1:mt_char=CH_I; 4'd2:mt_char=CH_G;
                 4'd3:mt_char=CH_H; 4'd4:mt_char=CH_T; default:;
             endcase
-            2'd1: case(mt_cidx) // SWITCH
+            2'd1: case(mt_cidx)
                 4'd0:mt_char=CH_S; 4'd1:mt_char=CH_W; 4'd2:mt_char=CH_I;
                 4'd3:mt_char=CH_T; 4'd4:mt_char=CH_C; 4'd5:mt_char=CH_H;
                 default:;
@@ -759,7 +728,7 @@ module video_mixer (
                 (mt_cidx==0?CH_F:mt_cidx==1?CH_A:mt_cidx==2?CH_I:mt_cidx==3?CH_N:
                  mt_cidx==4?CH_T:mt_cidx==5?CH_E:mt_cidx==6?CH_D:CH_SPC) :
                 pokemon_name_char(PT2, mt_cidx);
-            2'd3: // BACK button
+            2'd3:
                 case(mt_cidx)
                     4'd0:mt_char=CH_B; 4'd1:mt_char=CH_A;
                     4'd2:mt_char=CH_C; 4'd3:mt_char=CH_K;
@@ -773,10 +742,7 @@ module video_mixer (
 
     wire menu_text_on = in_box_text && mt_in_font && font_pixel(mt_char, mt_frow, mt_fcol);
 
-    // ================================================================
-    //  Text: HP Numbers below bars (2x scale, "CUR/MAX")
-    // ================================================================
-    localparam HP_TXT_DY = 10'd4;    // gap below bar
+    localparam HP_TXT_DY = 10'd4;
     localparam P1_HPT_X  = P1_HP_X;
     localparam P1_HPT_Y  = P1_HP_Y + HP_BAR_H + HP_TXT_DY;
     localparam P2_HPT_X  = P2_HP_X;
@@ -792,7 +758,6 @@ module video_mixer (
             reg [5:0] ch;
             tdx = px - P1_HPT_X;
             if (px >= P1_HPT_X && px < P1_HPT_X + 8'd77) begin
-                // Char index (stride 11, 7 chars: h t o / H T O)
                 if      (tdx>=66) begin ci=6; cp=tdx-66; end
                 else if (tdx>=55) begin ci=5; cp=tdx-55; end
                 else if (tdx>=44) begin ci=4; cp=tdx-44; end
@@ -848,10 +813,7 @@ module video_mixer (
         end
     end
 
-    // ================================================================
-    //  Text: Pokemon Names above HP bars (2x scale)
-    // ================================================================
-    localparam NAME_DY   = 10'd18;   // pixels above bar top
+    localparam NAME_DY   = 10'd18;
     localparam P1_NM_X   = P1_HP_X;
     localparam P1_NM_Y   = P1_HP_Y - NAME_DY;
     localparam P2_NM_X   = P2_HP_X;
@@ -910,9 +872,6 @@ module video_mixer (
         end
     end
 
-    // ================================================================
-    //  Animation state machine (unchanged)
-    // ================================================================
     localparam A_IDLE    = 3'd0;
     localparam A_LUNGE   = 3'd1;
     localparam A_RETURN  = 3'd2;
@@ -1062,9 +1021,6 @@ module video_mixer (
         endcase
     end
 
-    // ================================================================
-    //  Sprite region checks
-    // ================================================================
     wire in_p1 = (hCount >= p1_x) && (hCount < p1_x + SPRITE_SIZE)
               && (vCount >= p1_y) && (vCount < p1_y + SPRITE_SIZE);
     wire in_p2 = (hCount >= p2_x) && (hCount < p2_x + SPRITE_SIZE)
@@ -1077,9 +1033,6 @@ module video_mixer (
         c_sprite_col = hCount - p2_x;
     end
 
-    // ================================================================
-    //  HP bars (division-free with 20-bit overflow fix)
-    // ================================================================
     wire [9:0] hp_dx_p = px - P1_HP_X;
     wire [9:0] hp_dx_c = px - P2_HP_X;
 
@@ -1109,9 +1062,6 @@ module video_mixer (
     wire p2_yellow = ({cpu_hp_cur, 2'b00} > cpu_hp_max);
     wire [11:0] p2_hp_color = p2_green ? HP_GREEN : (p2_yellow ? HP_YELLOW : HP_RED);
 
-    // ================================================================
-    //  Menu box rendering
-    // ================================================================
     wire in_menu_area = (py >= MENU_Y) && (py < MENU_Y + MENU_H);
 
     wire in_box0 = in_menu_area && (px >= box0_x) && (px < box0_x + BOX_W);
@@ -1200,12 +1150,8 @@ module video_mixer (
         endcase
     end
 
-    // Text color: black on selected (yellow) box, white on dark box
     wire [11:0] menu_txt_clr = (menu_pixel == MENU_SEL) ? BLACK : WHITE;
 
-    // ================================================================
-    //  BACK button for S_FIGHT_SEL (above menu row)
-    // ================================================================
     localparam BACK_X = 10'd540;
     localparam BACK_Y = 10'd390;
     localparam BACK_W = 10'd90;
@@ -1218,7 +1164,6 @@ module video_mixer (
                        (px < BACK_X+3 || px >= BACK_X+BACK_W-3 ||
                         py < BACK_Y+3 || py >= BACK_Y+BACK_H-3);
 
-    // BACK button text (2x scale, centered: margin = (90-44)/2 = 23)
     reg back_txt_on;
     always @(*) begin
         back_txt_on = 0;
@@ -1245,19 +1190,12 @@ module video_mixer (
         end
     end
 
-    // ================================================================
-    //  Battle-state flag
-    // ================================================================
     wire in_battle = (game_state != S_START) && (game_state != S_END);
 
-    // ================================================================
-    //  Pixel priority encoder
-    // ================================================================
     always @(*) begin
         if (~bright) begin
             rgb = BLACK;
 
-        // ---------- START screen ----------
         end else if (game_state == S_START) begin
             if (text_on)
                 rgb = flash_bit ? WHITE : MED_GRAY;
@@ -1269,7 +1207,6 @@ module video_mixer (
             end else
                 rgb = NAVY;
 
-        // ---------- END screen ----------
         end else if (game_state == S_END) begin
             if (text_on)
                 rgb = WHITE;
@@ -1281,9 +1218,7 @@ module video_mixer (
             end else
                 rgb = user_won ? WIN_BG : LOSE_BG;
 
-        // ---------- Battle states ----------
         end else begin
-            // HP bars
             if (in_p1_hp_border) begin
                 if (in_p1_hp_fill)       rgb = p1_hp_color;
                 else if (in_p1_hp_bg)    rgb = DARK_GRAY;
@@ -1295,15 +1230,12 @@ module video_mixer (
                 else                     rgb = WHITE;
             end
 
-            // HP numbers
             else if (hp_txt_on)
                 rgb = WHITE;
 
-            // Pokemon names
             else if (name_txt_on)
                 rgb = WHITE;
 
-            // Menu boxes (with text overlay)
             else if (menu_active) begin
                 if (menu_text_on && !box0_border && !box1_border && !box2_border && !box3_border)
                     rgb = menu_txt_clr;
@@ -1311,7 +1243,6 @@ module video_mixer (
                     rgb = menu_pixel;
             end
 
-            // BACK button (S_FIGHT_SEL)
             else if (in_back_btn) begin
                 if (back_txt_on)
                     rgb = WHITE;
@@ -1321,15 +1252,12 @@ module video_mixer (
                     rgb = BACK_COLOR;
             end
 
-            // Player sprite
             else if (in_p1 && !p_sprite_transparent)
                 rgb = p1_flash ? RED : p_sprite_color;
 
-            // CPU sprite
             else if (in_p2 && !c_sprite_transparent)
                 rgb = p2_flash ? RED : c_sprite_color;
 
-            // Background
             else
                 rgb = bg_color;
         end

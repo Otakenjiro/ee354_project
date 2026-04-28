@@ -1,8 +1,6 @@
-// types.vh header file for pokemon type selection/assignment
 `ifndef TYPES_VH
 `define TYPES_VH
 
-// 4-bit type encoding (only types we actually use)
 `define TYPE_NORMAL   4'd0
 `define TYPE_FIRE     4'd1
 `define TYPE_WATER    4'd2
@@ -14,6 +12,6 @@
 `define TYPE_FLYING   4'd8
 `define TYPE_PSYCHIC  4'd9
 `define TYPE_GHOST    4'd10
-`define TYPE_NONE     4'd15   // used for mono-type pokemon's second slot. ex: charmander: fire, NONE. charizard: fire, flying
+`define TYPE_NONE     4'd15
 
 `endif

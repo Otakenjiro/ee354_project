@@ -1,14 +1,5 @@
 `timescale 1ns / 1ps
 
-// Reset synchronizer:
-//   - async assertion  (reset goes high immediately, even without a clock)
-//   - sync de-assertion (reset only falls on a clock edge, 2 flops deep
-//     to guarantee metastability settles before any logic sees it)
-//
-// This is the standard textbook CDC pattern for async reset in a single-
-// clock design. It eliminates recovery/removal timing violations that
-// otherwise cause flops to enter metastable states at reset release.
-
 module reset_sync (
     input  wire clk,
     input  wire async_rst_in,

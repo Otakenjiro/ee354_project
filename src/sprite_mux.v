@@ -2,8 +2,8 @@
 
 module sprite_mux (
     input wire clk,
-    input wire [2:0] player_id, // 1-6
-    input wire [2:0] cpu_id,    // 1-6
+    input wire [2:0] player_id,
+    input wire [2:0] cpu_id,
     input wire [6:0] p_row, p_col,
     input wire [6:0] c_row, c_col,
     output reg [11:0] player_color,
@@ -12,7 +12,6 @@ module sprite_mux (
     output reg cpu_transparent
 );
 
-    // Each ROM gets coordinates based on which side uses it.
     wire [6:0] r1_row, r1_col, r2_row, r2_col, r3_row, r3_col;
     wire [6:0] r4_row, r4_col, r5_row, r5_col, r6_row, r6_col;
 
@@ -38,7 +37,6 @@ module sprite_mux (
     zapdos_rom    rom5(.clk(clk), .row(r5_row), .col(r5_col), .color_data(out5));
     articuno_rom  rom6(.clk(clk), .row(r6_row), .col(r6_col), .color_data(out6));
 
-    // Output mux for player color
     always @(*) begin
         case (player_id)
             3'd1: player_color = out1;
@@ -51,7 +49,6 @@ module sprite_mux (
         endcase
     end
 
-    // Output mux for CPU color
     always @(*) begin
         case (cpu_id)
             3'd1: cpu_color = out1;
@@ -64,7 +61,6 @@ module sprite_mux (
         endcase
     end
 
-    // Transparency detection per Pokemon (based on sprite sheet background colors)
     function is_bg;
         input [2:0] pid;
         input [11:0] c;
@@ -72,12 +68,12 @@ module sprite_mux (
         begin
             r = c[11:8]; g = c[7:4]; b = c[3:0];
             case (pid)
-                3'd1: is_bg = (r <= 4'h1) && (g >= 4'hE) && (b >= 4'h9); // Charizard 0x0FB
-                3'd2: is_bg = (r >= 4'hA) && (g <= 4'h1) && (b >= 4'hD); // Venusaur  0xC0F
-                3'd3: is_bg = (r <= 4'h1) && (g >= 4'hE) && (b <= 4'h3); // Blastoise 0x0F1
-                3'd4: is_bg = (r <= 4'h1) && (g >= 4'hE) && (b <= 4'h2); // Moltres   0x0F0
-                3'd5: is_bg = (r <= 4'h2) && (g <= 4'h2) && (b >= 4'hD); // Zapdos    0x10F
-                3'd6: is_bg = (r >= 4'hA) && (g >= 4'hD) && (b <= 4'h2); // Articuno  0xCF0
+                3'd1: is_bg = (r <= 4'h1) && (g >= 4'hE) && (b >= 4'h9);
+                3'd2: is_bg = (r >= 4'hA) && (g <= 4'h1) && (b >= 4'hD);
+                3'd3: is_bg = (r <= 4'h1) && (g >= 4'hE) && (b <= 4'h3);
+                3'd4: is_bg = (r <= 4'h1) && (g >= 4'hE) && (b <= 4'h2);
+                3'd5: is_bg = (r <= 4'h2) && (g <= 4'h2) && (b >= 4'hD);
+                3'd6: is_bg = (r >= 4'hA) && (g >= 4'hD) && (b <= 4'h2);
                 default: is_bg = 1'b0;
             endcase
         end
